@@ -1,13 +1,9 @@
-export interface CommentsList {
-  [key: string]: CommentRequest;
-}
-
-export interface CommentRequest {
+export interface Comment {
   author: string;
   content: string;
   createdAt: string;
 }
 
-export interface CommentResponse extends CommentRequest {
+export interface CommentResponse extends Comment {
   id: string;
 }
