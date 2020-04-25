@@ -1,9 +1,8 @@
-export interface Comment {
-  author: string;
+export interface Note {
   content: string;
-  createdAt: string;
+  lastEdited: string;
 }
 
-export interface CommentResponse extends Comment {
+export interface NoteResponse extends Note {
   id: string;
 }

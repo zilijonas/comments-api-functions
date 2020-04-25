@@ -1,51 +1,54 @@
 import { https } from "firebase-functions";
 import { initializeApp, database } from "firebase-admin";
-import { CommentResponse, Comment } from "./models";
+import { NoteResponse, Note } from "./models";
 
 initializeApp();
 
-const commentsDB = database().ref("/comments");
+const notesDb = database().ref("/notes");
 
-const commentToResponse = (key: string | null, comment: Comment): CommentResponse => ({
+const noteToResponse = (key: string | null, comment: Note): NoteResponse => ({
   id: key ?? "",
-  author: comment.author,
   content: comment.content,
-  createdAt: comment.createdAt,
+  lastEdited: comment.lastEdited,
 });
 
-export const addComment = https.onRequest(async (req, res) => {
-  const { author, content, createdAt } = req.query;
-  const addCommentSnapshot = await commentsDB.push({ author, content, createdAt });
-  await addCommentSnapshot
+export const addNote = https.onRequest(async (req, res) => {
+  const { content, lastEdited } = req.query;
+  const addNoteSnapshot = notesDb.push({ content, lastEdited });
+  await addNoteSnapshot
     .once("value")
-    .then((snapshot) => res.status(200).send({ id: snapshot.key, ...snapshot.val() } as CommentResponse))
+    .then((snapshot) => res.status(200).send({ id: snapshot.key, ...snapshot.val() } as NoteResponse))
     .catch((error) => res.status(400).send({ error }));
 });
 
-export const removeComment = https.onRequest(async (req, res) => {
+export const removeNote = https.onRequest(async (req, res) => {
   const { id } = req.query;
-  await commentsDB
+  await notesDb
     .child(`${id}`)
     .remove()
     .then(() => res.status(200).send({ id }))
     .catch((error) => res.status(400).send({ error, id }));
 });
 
-export const getComments = https.onRequest(async (req, res) => {
-  const { orderByChild, direction } = req.query;
-  await commentsDB
-    .orderByChild(`${orderByChild}`)
+export const getNotes = https.onRequest(async (req, res) => {
+  await notesDb
+    .orderByChild(`lastEdited`)
     .once("value")
     .then((snapshot) => {
-      const comments: CommentResponse[] = [];
+      const notes: NoteResponse[] = [];
       snapshot.forEach((child) => {
-        const comment = child.val();
-        comments.push(commentToResponse(child.key, comment));
+        notes.unshift(noteToResponse(child.key, child.val()));
       });
-      if (direction === "desc") {
-        comments.reverse();
-      }
-      res.status(200).send({ comments });
+      res.status(200).send({ notes });
     })
+    .catch((error) => res.status(400).send({ error }));
+});
+
+export const getNote = https.onRequest(async (req, res) => {
+  const { id } = req.query;
+  await notesDb
+    .child(`${id}`)
+    .once("value")
+    .then((snapshot) => res.status(200).send(snapshot.val() as NoteResponse))
     .catch((error) => res.status(400).send({ error }));
 });
