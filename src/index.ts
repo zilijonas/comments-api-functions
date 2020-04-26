@@ -10,11 +10,14 @@ const noteToResponse = (key: string | null, comment: Note): NoteResponse => ({
   id: key ?? "",
   content: comment.content,
   lastEdited: comment.lastEdited,
+  editable: comment.editable,
 });
 
+const boolFromString = (value: any) => (value === "true" ? true : value === "false" ? false : null);
+
 export const addNote = https.onRequest(async (req, res) => {
-  const { content, lastEdited } = req.query;
-  const addNoteSnapshot = notesDb.push({ content, lastEdited });
+  const { content, lastEdited, editable } = req.query;
+  const addNoteSnapshot = notesDb.push({ content, lastEdited, editable: boolFromString(editable) } as Note);
   await addNoteSnapshot
     .once("value")
     .then((snapshot) => res.status(200).send({ id: snapshot.key, ...snapshot.val() } as NoteResponse))
@@ -22,12 +25,12 @@ export const addNote = https.onRequest(async (req, res) => {
 });
 
 export const editNote = https.onRequest(async (req, res) => {
-  const { id, content, lastEdited } = req.query;
+  const { id, content, lastEdited, editable } = req.query;
   await notesDb
     .child(`${id}`)
-    .set({ content, lastEdited })
+    .set({ content, lastEdited, editable: boolFromString(editable) })
     .catch((error) => res.status(400).send({ error }));
-  res.status(200).send({ id, content, lastEdited } as NoteResponse);
+  res.status(200).send({ id, content, lastEdited, editable: boolFromString(editable) } as NoteResponse);
 });
 
 export const removeNote = https.onRequest(async (req, res) => {
