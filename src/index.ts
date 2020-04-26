@@ -21,6 +21,15 @@ export const addNote = https.onRequest(async (req, res) => {
     .catch((error) => res.status(400).send({ error }));
 });
 
+export const editNote = https.onRequest(async (req, res) => {
+  const { id, content, lastEdited } = req.query;
+  await notesDb
+    .child(`${id}`)
+    .set({ content, lastEdited })
+    .catch((error) => res.status(400).send({ error }));
+  res.status(200).send({ id, content, lastEdited } as NoteResponse);
+});
+
 export const removeNote = https.onRequest(async (req, res) => {
   const { id } = req.query;
   await notesDb
